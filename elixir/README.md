@@ -86,12 +86,13 @@ Supported release targets:
 - `macos_x86_64`
 - `linux_arm64`
 - `linux_x86_64`
+- `windows_x86_64`
 
-`v*` tags publish all four targets with checksums. A manual workflow run builds the same
+`v*` tags publish all five targets with checksums. A manual workflow run builds the same
 artifacts without creating a release.
 
 The `burrito-nightly` workflow builds each push to `main`, with no scheduled rebuilds.
-After all four platform smoke tests pass, it updates the rolling
+After all five platform smoke tests pass, it updates the rolling
 [`nightly` prerelease](https://github.com/openai/symphony/releases/tag/nightly),
 including binaries and checksums. Nightly binaries use a `-nightly` version suffix;
 the release notes identify the source commit. Stable releases remain unchanged.
@@ -102,6 +103,14 @@ After downloading the executable for your platform from a release:
 chmod +x ./symphony-v0.0.1-macos_arm64
 ./symphony-v0.0.1-macos_arm64 ./WORKFLOW.md
 ```
+
+On Windows, download the `windows_x86_64.exe` asset and run it from PowerShell:
+
+```powershell
+.\symphony-v0.0.1-windows_x86_64.exe .\WORKFLOW.md
+```
+
+The Windows package requires the Microsoft Visual C++ runtime supplied by the Erlang/OTP build.
 
 ## Configuration
 

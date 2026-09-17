@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [linux_x86_64, linux_arm64, macos_x86_64, macos_arm64]
+        target: [linux_x86_64, linux_arm64, macos_x86_64, macos_arm64, windows_x86_64]
     defaults:
       run:
         working-directory: elixir
@@ -44,8 +44,8 @@ jobs:
       - name: Install Zig
         run: mise install zig@0.15.2
 
-      - name: Install xz
-        run: sudo apt-get update && sudo apt-get install -y xz-utils
+      - name: Install xz and 7z
+        run: sudo apt-get update && sudo apt-get install -y 7zip xz-utils
 
       - name: Install Mix dependencies
         run: |
@@ -85,8 +85,15 @@ jobs:
           fi
 
           artifact="symphony-${version}-${{ matrix.target }}"
+          if [[ "${{ matrix.target }}" == windows_* ]]; then
+            artifact="$artifact.exe"
+          fi
           mkdir -p dist
-          cp "burrito_out/symphony_${{ matrix.target }}" "dist/$artifact"
+          binary="burrito_out/symphony_${{ matrix.target }}"
+          if [[ "${{ matrix.target }}" == windows_* ]]; then
+            binary="$binary.exe"
+          fi
+          cp "$binary" "dist/$artifact"
           cd dist
 
           sha256sum "$artifact" > "$artifact.sha256"
@@ -114,6 +121,8 @@ jobs:
             runner: macos-15-intel
           - target: macos_arm64
             runner: macos-14
+          - target: windows_x86_64
+            runner: windows-2022
 
     steps:
       - name: Download release assets
@@ -122,7 +131,8 @@ jobs:
           name: ${{ matrix.target }}
           path: dist
 
-      - name: Smoke test executable
+      - name: Smoke test Unix executable
+        if: matrix.target != 'windows_x86_64'
         run: |
           artifact="$(find dist -type f ! -name '*.sha256' -print -quit)"
           test -n "$artifact"
@@ -135,6 +145,27 @@ jobs:
 
           test "$status" -eq 1
           grep -F "This Symphony implementation is a low key engineering preview." <<<"$output"
+
+      - name: Smoke test Windows executable
+        if: matrix.target == 'windows_x86_64'
+        shell: pwsh
+        run: |
+          $artifact = Get-ChildItem -Path dist -File | Where-Object { $_.Name -notlike '*.sha256' } | Select-Object -First 1
+          if ($null -eq $artifact) {
+            throw 'Windows release executable was not found.'
+          }
+
+          $env:SYMPHONY_INSTALL_DIR = Join-Path $env:RUNNER_TEMP 'symphony-install'
+          $output = & $artifact.FullName 2>&1
+          $status = $LASTEXITCODE
+
+          if ($status -ne 1) {
+            throw "Expected the executable to exit with status 1, got $status.`n$output"
+          }
+
+          if ($output -notmatch 'This Symphony implementation is a low key engineering preview\.') {
+            throw "Smoke test output did not contain the expected preview message.`n$output"
+          }
 
   release:
     if: inputs.nightly || startsWith(github.ref, 'refs/tags/v')

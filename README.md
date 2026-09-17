@@ -31,6 +31,9 @@ Check out [elixir/README.md](elixir/README.md) for instructions on how to set up
 and run the Elixir-based Symphony implementation. You can also ask your favorite coding agent to
 help with the setup:
 
+Stable and nightly self-contained binaries, including the Windows x86_64 package, are available
+from the [GitHub Releases](https://github.com/openai/symphony/releases) page.
+
 > Set up Symphony for my repository based on
 > https://github.com/openai/symphony/blob/main/elixir/README.md
 
